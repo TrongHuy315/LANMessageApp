@@ -1,1 +1,4 @@
 config/
+compile/
+lib/
+message_app.db
