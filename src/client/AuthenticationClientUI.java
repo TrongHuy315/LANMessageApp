@@ -19,9 +19,9 @@ public class AuthenticationClientUI {
     private boolean checkFlag = false;
 
     private AuthenticationClient authenticationClient;
-    private ChatClientUI parent;
+    private ProfileClientUI parent;
 
-    public AuthenticationClientUI(Pane pane, PrintWriter out, BufferedReader in, ChatClientUI parent) {
+    public AuthenticationClientUI(Pane pane, PrintWriter out, BufferedReader in, ProfileClientUI parent) {
         this.pane = pane;
         this.out = out;
         this.in = in;

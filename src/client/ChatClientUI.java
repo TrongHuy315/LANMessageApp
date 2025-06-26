@@ -26,8 +26,8 @@ public class ChatClientUI extends Application {
     private Scene scene;
     private ChatClient chatClient;
     private AuthenticationClientUI authenticationClientUI;
+    private ProfileClientUI profileClientUI;
 
-    private Thread listeningThread;
     private Socket socket;
     private PrintWriter out;
     private BufferedReader in;
@@ -42,32 +42,16 @@ public class ChatClientUI extends Application {
             out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
             
-            authenticationClientUI = new AuthenticationClientUI(pane, out, in, this);
+            profileClientUI = new ProfileClientUI(pane, stage);
+            authenticationClientUI = new AuthenticationClientUI(pane, out, in, profileClientUI);
 
-            chatClient = new ChatClient(out, authenticationClientUI);
+            chatClient = new ChatClient(socket, out, in, authenticationClientUI);
         } catch (IOException e) {
             System.out.println("[Client] Lỗi khi đóng kết nối: " + e.getMessage());
         }
         
         scene = new Scene(pane);
         setStage(stage);
-    }
-
-    private void startThread() {
-        listeningThread = new Thread(() -> {
-            try {
-                out.println("[JOIN] " + authenticationClientUI.getUserName() + " đã tham gia");
-
-                String msg;
-                while ((msg = in.readLine()) != null) {
-                    String finalMsg = msg;
-                    Platform.runLater(() -> chatClient.receiveMessage(messageArea, finalMsg));
-                }
-            } catch (IOException e) {
-                Platform.runLater(() -> chatClient.receiveMessage(messageArea, "[Lỗi kết nối] " + e.getMessage()));
-            }
-        });
-        listeningThread.start();
     }
 
     private void setMessageArea(Pane pane) {
@@ -102,7 +86,7 @@ public class ChatClientUI extends Application {
         stage.show();
         stage.setOnCloseRequest(_ -> {
             stage.close();
-            disconnect();
+            chatClient.disconnect();
             Platform.exit();
             System.exit(0);
         });
@@ -129,21 +113,7 @@ public class ChatClientUI extends Application {
         setInputField(pane);
         setSendButton(pane);
 
-        startThread();
-    }
-
-    protected void disconnect() {
-        try {
-            if (out != null) out.println("[LEAVE] User đã rời khỏi phòng chat.");
-            if (in != null) in.close();
-            if (out != null) out.close();
-            if (socket != null && !socket.isClosed()) socket.close();
-        } catch (IOException e) {
-            System.out.println("[Client] Lỗi khi đóng kết nối: " + e.getMessage());
-        }
-        if (listeningThread != null && listeningThread.isAlive()) {
-            listeningThread.interrupt();
-        }
+        chatClient.startThread(messageArea);
     }
 
     public static void main(String[] args) {
